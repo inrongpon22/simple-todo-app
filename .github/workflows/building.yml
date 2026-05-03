@@ -1,0 +1,31 @@
+# คุณสามารถกำหนดชื่อ workflow ของคุณได้ที่นี่
+name: Building
+
+# ่ส่วนนี้คือการกำหนด event trigger เพื่อให้ workflow ทำงาน ซึ่งในตัวอย่าง 
+# ผมจะกำหนดว่า ให้ "ทำงาน" ก็ต่อเมื่อ branch `master` มีการเปลี่ยนแปลง
+# คุณสามารถเข้าไปดูรายละเอียดเพิ่มเติมได้ที่ https://help.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  push:
+    branches:
+    - main
+
+# ใน jobs นั้น เป็นตัวลำดับการทำงานของ action ต่างที่เรากำหนดขึ้นมา ซึ่งมันจะทำงานเป็นลำดับขั้นตอน 1,2,3... 
+# แต่คุณสามารถปรับแต่งเพิ่มเติมเพื่อให้ทำงานในรูปแบบคู่ขนานได้ (matrix)
+jobs:
+  # [required] อันนี้เป็นชื่อเรียก workflow
+  build:
+    # [required] จุดนี้เป็นจุดที่ระบุว่า คุณต้องการ run CI บน ubuntu ซึ่งผมเข้าใจว่ามันเป็น shared resources บน Github Action
+    # ซึ่งคุณสามารถเลือกใช้ได้ว่า จะใน run based on Ubuntu, Window หรือ MacOS ได้ (แต่ราคาคนละเรื่องเลย)
+    runs-on: ubuntu-latest
+
+    # [required] จุดนี้เป็นตัวรวบรวม และกำหนดว่า ใน workflow นี้ เราจะใช้ Action ไหนในการทำให้ workflow นี้สมบูรณ์บ้าง
+    steps:
+    # [required] อันนี้เป็น Action ที่เรียกได้ว่าเป็นยาสามัญประจำบ้านเลยก็คือ 
+    # การบอกให้เครื่อง CI ของเราไป checkout code ล่าสุดบน master branch ออกมาไว้บน workspace ของตัว CI
+    - uses: actions/checkout@v2
+
+    # [optional] หลังจากคุณ checkout ใน action แรกสำเร็จแล้ว นี่คือ Action ต่อไป นั้นคือการ print Hello, world ออกมาสู่ terminal ของ CI
+    # Tips. ในจุดนี้ หากคุณกำหนด runs-on เป็นแบบ ubuntu หรือ macOS คุณสามารถใช้ shell script ลงไปใน run ได้เลย
+    # หรือถ้าหากต้องการกำหนดหลายๆคำสั่ง ใฟห้ใช้ pipe ( | )  เพื่อบอกว่า คุณจะให้ Action นี้ทำงานหลายคำสั่ง 
+    - name: Build the project
+      run: npm run build

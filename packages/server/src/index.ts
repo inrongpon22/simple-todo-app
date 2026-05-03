@@ -43,6 +43,8 @@ const publishTodoEvent = async (eventType: 'todo.created' | 'todo.deleted', payl
     return;
   }
 
+  console.log("🚀 sending event to kafka", eventType, payload);
+
   await producer.send({
     topic: kafkaTopic,
     messages: [
