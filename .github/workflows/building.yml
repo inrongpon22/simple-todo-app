@@ -31,4 +31,3 @@ jobs:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: ${{ job.status }}
           content: "Workflow ${{ github.workflow }} finished with status: ${{ job.status }}"
-          ack_no_webhook: true
