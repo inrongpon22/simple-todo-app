@@ -20,12 +20,11 @@ jobs:
       - run: npm run build
 
       - name: Discord Notification
-        uses: appleboy/discord-action@master
-        if: always() # Ensures this runs even if previous steps fail
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-          message: |
-            **Workflow:** ${{ github.workflow }}
-            **Status:** ${{ job.status }}
-            **Commit:** ${{ github.event.head_commit.message }}
-            **Link:** https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}
+        # uses: appleboy/discord-action@master
+        if: always()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "content": "🚀 **Workflow ${{ github.workflow }}** finished with status: **${{ job.status }}**\nView details: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }' \
+          ${{ secrets.DISCORD_WEBHOOK }}
