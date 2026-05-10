@@ -19,12 +19,15 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Discord Notification
-        # uses: appleboy/discord-action@master
+      # Your build/test steps here
+      - name: Run Tests
+        run: npm test
+
+      # Discord Notification Step
+      - name: Send Discord Notification
+        uses: sarisia/actions-status-discord@v1
         if: always()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "content": "🚀 **Workflow ${{ github.workflow }}** finished with status: **${{ job.status }}**\nView details: https://github.com{{ github.repository }}/actions/runs/${{ github.run_id }}"
-          }' \
-          ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          content: "Workflow ${{ github.workflow }} finished with status: ${{ job.status }}"
