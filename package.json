@@ -9,6 +9,8 @@
     "dev:app": "npm run dev --workspace @simple-todo/app",
     "dev:server": "npm run dev --workspace @simple-todo/server",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "db:push": "supabase db push",
+    "db:new": "supabase migration new"
   }
 }

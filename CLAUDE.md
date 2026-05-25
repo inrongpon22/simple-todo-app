@@ -32,6 +32,18 @@ npm run start        # Run compiled dist/index.js
 docker compose up -d   # Start Zookeeper, Kafka, PostgreSQL
 ```
 
+### Database migrations
+```bash
+npm run db:push          # Apply all pending migrations to the linked Supabase project
+npm run db:new <name>    # Create a new timestamped migration file in supabase/migrations/
+```
+
+One-time setup (requires [Supabase CLI](https://supabase.com/docs/guides/cli)):
+```bash
+supabase init            # Creates supabase/config.toml (run once per machine)
+supabase link            # Links this directory to your Supabase project
+```
+
 ## Architecture
 
 This is an npm workspaces monorepo with two packages:
@@ -49,15 +61,49 @@ This is an npm workspaces monorepo with two packages:
 
 ### Database Schema (Supabase / PostgreSQL)
 
-Run this once in the Supabase SQL editor to create the todos table:
+Migrations live in `supabase/migrations/` and are applied with `npm run db:push`. Never write schema directly in the Supabase SQL editor — always create a migration file instead.
 
+| Migration file | Description |
+|---|---|
+| `20260524000001_create_todos.sql` | `todos` table |
+| `20260524000002_create_workout_sessions.sql` | `workout_sessions` table + RLS |
+| `20260524000003_create_exercises.sql` | `exercises` table + RLS |
+
+**`todos`**
 ```sql
 create table todos (
-  id uuid primary key default gen_random_uuid(),
-  text text not null,
+  id         uuid        primary key default gen_random_uuid(),
+  text       text        not null,
   created_at timestamptz not null default now()
 );
 ```
+
+**`workout_sessions`** — many per user per day; named "[Day] workout [N]" by default
+```sql
+create table workout_sessions (
+  id         uuid        primary key default gen_random_uuid(),
+  user_id    uuid        not null references auth.users(id) on delete cascade,
+  name       text        not null,
+  date       date        not null default current_date,
+  created_at timestamptz not null default now()
+);
+```
+
+**`exercises`** — many per session; `name` is free text or from the preset list
+```sql
+create table exercises (
+  id         uuid        primary key default gen_random_uuid(),
+  session_id uuid        not null references workout_sessions(id) on delete cascade,
+  name       text        not null,
+  sets       int,
+  reps       int,
+  weight_kg  numeric,
+  notes      text,
+  created_at timestamptz not null default now()
+);
+```
+
+Both `workout_sessions` and `exercises` have Row Level Security enabled — users can only access their own data.
 
 ### Environment Variables
 
