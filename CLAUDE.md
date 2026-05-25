@@ -43,16 +43,30 @@ This is an npm workspaces monorepo with two packages:
 
 1. `App.tsx` fetches todos from `GET /todos` on mount and renders the list
 2. User submits the form → `POST /todos` (create) or clicks delete → `DELETE /todos/:id`
-3. Express stores todos in an **in-memory array** (no database persistence yet — PostgreSQL is defined in `docker-compose.yml` but not wired up)
+3. Express reads/writes todos to **Supabase (PostgreSQL)** via `@supabase/supabase-js`
 4. On each create/delete, the server publishes a Kafka event to the `todo-events` topic (`todo.created` / `todo.deleted`)
 5. The frontend updates its state directly from API responses; there is no Kafka consumer on the frontend
 
+### Database Schema (Supabase / PostgreSQL)
+
+Run this once in the Supabase SQL editor to create the todos table:
+
+```sql
+create table todos (
+  id uuid primary key default gen_random_uuid(),
+  text text not null,
+  created_at timestamptz not null default now()
+);
+```
+
 ### Environment Variables
 
-Backend defaults (set in `packages/server/src/index.ts`):
+Backend (`packages/server/.env`):
 - `PORT=4000`
 - `KAFKA_BROKERS=localhost:9092`
 - `KAFKA_TOPIC=todo-events`
+- `SUPABASE_URL=https://your-project-ref.supabase.co`
+- `SUPABASE_SERVICE_KEY=your-service-role-key-here`
 
 Frontend (set via `.env` in `packages/app`):
 - `VITE_API_BASE_URL=http://localhost:4000`
@@ -63,6 +77,32 @@ GitHub Actions (`.github/workflows/building.yml`) triggers on push/PR to `main`:
 
 ## Coding Conventions
 
+### Backend (`packages/server`)
+
+Controllers live under `src/controllers/<resource>/` and follow CQRS: **queries** (reads) and **commands** (writes) are in separate subdirectories.
+
+**File naming — kebab-case with `-controller` suffix:**
+
+| Operation | File name |
+|---|---|
+| Get all (list) | `todos-controller.ts` — plural resource name |
+| Get one by ID | `todo-controller.ts` — singular resource name |
+| Create | `create-todo-controller.ts` — `<action>-<resource>-controller` |
+| Update | `update-todo-controller.ts` — `<action>-<resource>-controller` |
+| Delete | `delete-todo-controller.ts` — `<action>-<resource>-controller` |
+
+**Folder layout example (`todos` resource):**
+```
+controllers/todos/
+├── queries/
+│   ├── todos-controller.ts       # GET /todos
+│   └── todo-controller.ts        # GET /todos/:id
+└── commands/
+    ├── create-todo-controller.ts  # POST /todos
+    ├── update-todo-controller.ts  # PATCH /todos/:id
+    └── delete-todo-controller.ts  # DELETE /todos/:id
+```
+
 ### Frontend (`packages/app`)
 
 - **Class components** — all React components are written as `class Foo extends React.Component`. No function components.
@@ -72,5 +112,5 @@ GitHub Actions (`.github/workflows/building.yml`) triggers on push/PR to `main`:
 ### Current State
 
 - **No tests** are implemented — `npm test` is a no-op
-- **PostgreSQL** is defined in Docker Compose but not used; todos live in memory only
+- **Supabase** is the database — replace placeholder values in `packages/server/.env` with real credentials
 - The Kafka producer is wired up; no consumer exists yet
